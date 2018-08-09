@@ -19,7 +19,7 @@ input {
 }
 
 /* Column types */
-th.missed-col {
+th.missed {
     background-color: #f00;
 }
 
@@ -29,6 +29,6 @@ td.missed-col {
     text-align: center;
 }
 
-.name-col {
+.name__name {
     text-align: left;
 }

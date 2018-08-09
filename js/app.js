@@ -29,56 +29,135 @@
 
 /* STUDENT APPLICATION */
 $(function() {
-    var attendance = JSON.parse(localStorage.attendance),
-        $allMissed = $('tbody .missed-col'),
-        $allCheckboxes = $('tbody input');
 
-    // Count a student's missed days
-    function countMissing() {
-        $allMissed.each(function() {
-            var studentRow = $(this).parent('tr'),
-                dayChecks = $(studentRow).children('td').children('input'),
-                numMissed = 0;
-
-            dayChecks.each(function() {
-                if (!$(this).prop('checked')) {
-                    numMissed++;
-                }
-            });
-
-            $(this).text(numMissed);
-        });
+    const model = {
+        attendance: JSON.parse(localStorage.attendance),
     }
 
-    // Check boxes, based on attendace records
-    $.each(attendance, function(name, days) {
-        var studentRow = $('tbody .name-col:contains("' + name + '")').parent('tr'),
-            dayChecks = $(studentRow).children('.attend-col').children('input');
+    const controller = {
+    
+        /**
+         * @desc    Calls List array
+         * @param   none
+         * @returns Array - List Item
+         */
+        getAttendance: function() {
+          return model.attendance;
+        },
 
-        dayChecks.each(function(i) {
-            $(this).prop('checked', days[i]);
-        });
-    });
+        /**
+         * @description Assigns new value to array element
+         * @param array, index, boolean
+         * @returns array index with new boolean
+         */
+        updateLocalStorage: function( name, index, value ) {
+            this.getAttendance()[name][index] = value;
+        },
 
-    // When a checkbox is clicked, update localStorage
-    $allCheckboxes.on('click', function() {
-        var studentRows = $('tbody .student'),
-            newAttendance = {};
+        /**
+         * @description Count a student's missed days
+         * @param Array to count inner elements
+         * @returns integer
+         */
+        countMissedDays: function( array ) {
+            let student = this.getAttendance()[array];
+            let daysMissed = 0;
 
-        studentRows.each(function() {
-            var name = $(this).children('.name-col').text(),
-                $allCheckboxes = $(this).children('td').children('input');
+            for (let i = 0; i < student.length; i++ ) {
+                if (!student[i]){ daysMissed++ };
+            }
+            return daysMissed;
+        },
 
-            newAttendance[name] = [];
+        init: function(){
+            view.init();
+        }
+    }
 
-            $allCheckboxes.each(function() {
-                newAttendance[name].push($(this).prop('checked'));
+    const view = {
+        $allCheckboxes: $(".student__checkbox"),
+        $allStudents: $(".student__name"),
+        $allStudentsMissedCell: $(".missed-col"),
+        attendance: controller.getAttendance(),
+
+        /**
+         * @description When a checkbox is clicked, update localStorage
+         *              and missed days count
+         * @param none
+         * @return function
+         */
+        checkBoxAction: function() {
+            this.$allCheckboxes.on('click', function(){
+                let $parent = $(this).closest(".student");
+                let $studentName = $parent.find(".student__name").text();
+                let index = $parent.find(".student__checkbox").index(this);
+                let val = this.checked;
+
+                controller.updateLocalStorage( $studentName, index, val );
+                view.writeMissedDaysCount();
             });
-        });
+        },
 
-        countMissing();
-        localStorage.attendance = JSON.stringify(newAttendance);
-    });
+        /**
+         * @description Inserts text in DOM element
+         * @param index of element, string
+         * @requires DOM elmeent
+         */
+        insertCellText: function( elem, index, str ) {
+            elem[index].innerText = str;
+        },
 
-    countMissing();
+        /**
+         * @description Iterates through checkboxes and add value
+         * @param none
+         * @return DOM element
+         */
+
+        checkBoxes: function() {
+            let $student = $(".student");
+            for ( let i = 0; i < this.$allStudents.length; i ++ ) {
+                let name = $($student[i]).find(".student__name").text();
+                let $studentCheckboxes = $($student[i]).find(".student__checkbox");
+
+                for ( let a = 0; a < this.attendance[name].length; a++ ) {
+                    $studentCheckboxes[a].checked = this.attendance[name][a];
+                }
+            }
+        },
+
+        /**
+         * @description Write name column
+         * @param none
+         * @returns function
+         */
+        writeNames: function() {
+            let i = 0;
+            for ( let name in this.attendance ){
+                this.insertCellText( this.$allStudents, i, name );
+                i++
+            }
+        },
+
+        /**
+         * @description Write missing days column
+         * @param none
+         * @returns function
+         */
+        writeMissedDaysCount: function() {
+            let i = 0;
+            for ( let name in this.attendance ){
+                this.insertCellText( this.$allStudentsMissedCell, i, controller.countMissedDays( name ) );
+                i++
+            }
+        },
+
+        init: function() {
+            this.writeMissedDaysCount();
+            this.writeNames();
+            this.checkBoxes();
+            this.checkBoxAction();
+        }
+    }
+
+    controller.init();
 }());
